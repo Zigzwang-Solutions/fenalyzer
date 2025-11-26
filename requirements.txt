@@ -1,0 +1,25 @@
+# FENalyzer Project Dependencies
+# This project is built with Zig. There are no pip/npm packages required.
+# Below are the system-level tools needed to run the CLI and Viewer.
+
+# --- Core Build System ---
+# Required to compile the source code.
+Zig>=0.11.0
+
+# --- CLI Runtime (Linux/macOS) ---
+# Used by 'run.sh' for logic and output formatting.
+bash>=4.0
+python3       # Required for robust URL encoding (standard library only)
+jq            # Optional: Recommended for pretty-printing JSON output
+
+# --- CLI Runtime (Windows) ---
+# Used by 'run.ps1'.
+PowerShell>=5.0
+
+# --- Web Viewer ---
+# Required to view the generated visualization.
+# Any modern browser with ES6 support.
+Google Chrome / Firefox / Edge / Safari
+
+# --- Deployment (Optional) ---
+Docker        # Required if running via container

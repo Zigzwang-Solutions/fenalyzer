@@ -1,0 +1,30 @@
+# --- Zig Build Artifacts & Cache ---
+zig-cache/
+zig-out/
+*.o
+*.obj
+
+# --- Compiled Executables ---
+# Linux / macOS binary
+fen_parser
+# Windows binary
+*.exe
+# Legacy/Debug binaries
+fen_parser_bin
+
+# --- OS Metadata ---
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- IDE & Editor Config ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- Logs & Temp Files ---
+*.log
+build.log
+web/*.tmp

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A lightweight FEN visualizer for the FENalyzer project.">
+    <title>FENalyzer Viewer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>FENalyzer Viewer</h1>
+            <p>Validated Chess State Visualizer</p>
+        </header>
+
+        <main>
+            <section class="board-container" aria-label="Chess Board">
+                <div id="board" class="chess-board">
+                    </div>
+            </section>
+
+            <aside class="info-panel">
+                <div class="status-card">
+                    <h3>Active FEN</h3>
+                    <code id="fen-display">Waiting for input...</code>
+                    
+                    <div class="meta-data">
+                        <span id="turn-indicator" class="badge">Turn: <span id="turn-value">-</span></span>
+                        <span id="move-indicator" class="badge">Full Moves: <span id="move-value">-</span></span>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <label for="json-input">Debug: Paste JSON output manually</label>
+                    <textarea id="json-input" placeholder='{"valid": true, "board_fen": "..."}'></textarea>
+                    
+                    <button id="btn-render" type="button">Render JSON</button>
+                    
+                    <div id="error-msg" class="error-box hidden" aria-live="assertive"></div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
