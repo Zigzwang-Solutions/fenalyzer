@@ -2,9 +2,7 @@
 
 **A High-Performance, Memory-Safe Chess FEN Engine & Data Pipeline.**
 
-FENalyzer is more than just a validator; it is a comprehensive toolkit for processing, storing, and visualizing Chess [Forsyth–Edwards Notation (FEN)](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation). 
-
-Built on a **Zig** core for maximum performance and safety, it orchestrates a hybrid environment using **Python** for ETL (Extract, Transform, Load) operations and **PowerShell/Bash** for automation, all connected to a serverless **Web Viewer**.
+FENalyzer is a robust tool designed to validate Chess [Forsyth–Edwards Notation (FEN)](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) strings. Built with **Zig** for maximum performance and memory safety, it serves as a strict validator for chess engines, interfaces, and databases. It includes a cross-platform CLI and a vanilla JS web visualizer.
 
 ---
 
@@ -12,24 +10,26 @@ Built on a **Zig** core for maximum performance and safety, it orchestrates a hy
 
 The project operates on a "Compile Once, Run Anywhere" philosophy with a decoupled architecture:
 
-```mermaid
-graph TD
-    User((User)) -->|CLI Commands| Script[Orchestrator (run.ps1/sh)]
-    
-    subgraph "Core Layer (Zig)"
-        Script -->|Executes| Binary[fen_parser.exe]
-        Binary -->|Validates| JSON[JSON Output]
-    end
-    
-    subgraph "Data Layer (Python + SQLite)"
-        Script -->|Hashes & Stores| PY[tools/manage_db.py]
-        PY <-->|Persists| DB[(data/positions.db)]
-    end
-    
-    subgraph "Presentation Layer (Web)"
-        Script -->|Injects Base64| DataFile[web/data.js]
-        Browser[Web Viewer] -->|Reads| DataFile
-    end
+```text
+      User (CLI)
+         │
+         ▼
+ ┌──────────────────────┐
+ │     Orchestrator     │
+ │  (scripts/run.ps1)   │
+ └──────────┬───────────┘
+            │
+            ├───► [Core Layer] ───────────────────┐
+            │     fen_parser.exe (Zig)            │
+            │     └─► Validates Logic & Syntax    │
+            │                                     │
+            ├───► [Data Layer] ───────────────────┤
+            │     tools/manage_db.py (Python)     │
+            │     └─► Persists to SQLite DB       │
+            │                                     │
+            └───► [Presentation Layer] ───────────┘
+                  web/index.html (JS/HTML)
+                  └─► Reads Injected Data (Base64)
 ```
 
 ---
@@ -113,7 +113,7 @@ chmod +x scripts/*.sh
 
 ## 🧪 Testing & Quality Assurance
 
-We enforce code quality through a dedicated test suite located in `tests/`.
+The project includes a comprehensive suite of integration tests to ensure binary logic, CLI wrappers, and Docker container integrity.
 
 * **Integration Tests:** Verify that the Zig binary handles edge cases correctly (valid/invalid FENs).
 * **Docker Tests:** Verify the build process and ensure the container runs as a **non-root user** (`appuser`) for security compliance.
