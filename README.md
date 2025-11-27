@@ -49,7 +49,7 @@ fenalyzer/
 ## 🛠️ Installation & Usage
 
 ### Prerequisites
-* **Zig Compiler:** v0.11.0 or newer.
+* **Zig Compiler:** v0.11.0 up to v0.13.x (Note: v0.14+ dev/nightly builds introduce breaking changes).
 * **Python 3:** (Optional, Linux only) Recommended for safe URL encoding when using the Web Viewer via CLI.
 
 ### 1. CLI Usage (Local)

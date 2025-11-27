@@ -68,10 +68,10 @@ pub fn main() !void {
             FenError.InvalidActiveColor => "Invalid active color (must be 'w' or 'b')",
             FenError.InvalidCastlingRights => "Invalid castling rights",
             FenError.InvalidEnPassantSquare => "Invalid En Passant square",
-            error.ParseIntError => "Error parsing numeric fields (half/full moves)",
+            FenError.InvalidHalfMoveClock, FenError.InvalidFullMoveNumber => "Error parsing numeric fields (half/full moves)",
             else => "Generic invalid FEN format",
         };
-        
+
         const stdout = std.io.getStdOut().writer();
         try stdout.print("{{\"valid\": false, \"error\": \"{s}\", \"code\": \"{s}\"}}\n", .{ err_msg, @errorName(err) });
         std.process.exit(1);
@@ -88,7 +88,6 @@ fn parseFen(allocator: std.mem.Allocator, input: []const u8) ![]u8 {
     if (trimmed.len > 128) return FenError.InputTooLong;
 
     var it = std.mem.tokenizeScalar(u8, trimmed, ' ');
-    
     const board_part = it.next() orelse return FenError.InvalidFieldCount;
     const color_part = it.next() orelse return FenError.InvalidFieldCount;
     const castling_part = it.next() orelse return FenError.InvalidFieldCount;
@@ -149,8 +148,14 @@ fn validateBoard(board: []const u8) !void {
                     'p', 'P' => {
                         if (rank_count == 1 or rank_count == 8) return FenError.PawnsOnBackRank;
                     },
-                    'k' => { if(b_king) return FenError.InvalidPieceChar; b_king = true; },
-                    'K' => { if(w_king) return FenError.InvalidPieceChar; w_king = true; },
+                    'k' => {
+                        if (b_king) return FenError.InvalidPieceChar;
+                        b_king = true;
+                    },
+                    'K' => {
+                        if (w_king) return FenError.InvalidPieceChar;
+                        w_king = true;
+                    },
                     'n', 'b', 'r', 'q', 'N', 'B', 'R', 'Q' => {},
                     else => return FenError.InvalidPieceChar,
                 }
@@ -166,7 +171,7 @@ fn validateBoard(board: []const u8) !void {
 fn validateCastling(s: []const u8) !void {
     if (std.mem.eql(u8, s, "-")) return;
     if (s.len > 4) return FenError.InvalidCastlingRights;
-    
+
     var seen = [_]bool{false} ** 256;
     for (s) |c| {
         switch (c) {
@@ -187,7 +192,6 @@ fn validateEnPassant(s: []const u8, active_color: u8) !void {
     const rank = s[1];
 
     if (file < 'a' or file > 'h') return FenError.InvalidEnPassantSquare;
-    
     if (active_color == 'w') {
         if (rank != '6') return FenError.InvalidEnPassantSquare;
     } else {

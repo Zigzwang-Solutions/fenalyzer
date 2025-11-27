@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2025-11-26
+
+### Fixed
+- **Core Engine (`fen_parser.zig`)**: Fixed a compilation error regarding unreachable error handling in `main`. The parser now correctly exposes `FenError.InvalidHalfMoveClock` and `FenError.InvalidFullMoveNumber` instead of swallowing the internal `ParseIntError`.
+- **PowerShell CLI (`run.ps1`)**:
+  - **Syntax Error**: Moved the `param` block to the top of the script to comply with PowerShell strict mode requirements.
+  - **Crash on Launch**: Replaced the legacy `System.Web` assembly dependency with `[System.Uri]`, preventing crashes on systems where the web assembly is missing or incompatible.
+  - **URL Formatting**: Fixed a bug where using Windows file paths (backslashes) caused browsers to strip the `?fen=...` query parameters. The script now correctly converts paths to standard file URIs (`file:///...`).
+  - **Browser Launch**: Implemented a more robust browser launch strategy using `cmd /c start` and added a fallback that prints the full clickable URL to the terminal if the automatic launch fails.
+- **Documentation**: Updated `README.md` to restrict supported Zig versions to v0.11.0 through v0.13.x, warning users against using v0.14+ (nightly/dev) builds due to breaking standard library changes.
+
 ## [1.1.0] - 2025-11-26
 
 ### Added
