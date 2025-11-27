@@ -1,27 +1,55 @@
 # FENalyzer
 
-**A High-Performance, Memory-Safe FEN Parser & Visualizer.**
+**A High-Performance, Memory-Safe Chess FEN Engine & Data Pipeline.**
 
-FENalyzer is a robust tool designed to validate Chess [Forsyth–Edwards Notation (FEN)](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation) strings. Built with **Zig** for maximum performance and memory safety, it serves as a strict validator for chess engines, interfaces, and databases. It includes a cross-platform CLI and a vanilla JS web visualizer.
+FENalyzer is more than just a validator; it is a comprehensive toolkit for processing, storing, and visualizing Chess [Forsyth–Edwards Notation (FEN)](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation). 
+
+Built on a **Zig** core for maximum performance and safety, it orchestrates a hybrid environment using **Python** for ETL (Extract, Transform, Load) operations and **PowerShell/Bash** for automation, all connected to a serverless **Web Viewer**.
 
 ---
 
-## 🚀 Features
+## 🏛️ System Architecture
 
-### Core Validation Engine (Zig)
-The parser enforces strict adherence to chess rules, rejecting invalid states that simple regex parsers often miss:
-* **Board Geometry:** Ensures exactly 8 ranks and 8 files per rank.
-* **King Safety:** Validates the existence of exactly one White King and one Black King.
-* **Pawn Placement:** Rejects pawns on rank 1 or 8 (illegal in standard chess).
-* **Castling Rights:** Checks for syntax correctness and logic.
-* **En Passant:** Validates target squares logic based on the active color.
-* **Numeric Integrity:** Safe parsing of Half-move and Full-move counters.
+The project operates on a "Compile Once, Run Anywhere" philosophy with a decoupled architecture:
 
-### Polyglot Architecture
-* **Core:** Zig (v0.11 - v0.13) for `O(n)` parsing speed and binary portability.
-* **CLI:** Split "Build" and "Run" scripts for instant execution without recompilation overhead.
-* **Viewer:** A standalone HTML/JS web interface using Base64 data injection for secure local rendering.
-* **Containerization:** Multi-stage Docker build producing a minimal, secure (non-root) Alpine image.
+```mermaid
+graph TD
+    User((User)) -->|CLI Commands| Script[Orchestrator (run.ps1/sh)]
+    
+    subgraph "Core Layer (Zig)"
+        Script -->|Executes| Binary[fen_parser.exe]
+        Binary -->|Validates| JSON[JSON Output]
+    end
+    
+    subgraph "Data Layer (Python + SQLite)"
+        Script -->|Hashes & Stores| PY[tools/manage_db.py]
+        PY <-->|Persists| DB[(data/positions.db)]
+    end
+    
+    subgraph "Presentation Layer (Web)"
+        Script -->|Injects Base64| DataFile[web/data.js]
+        Browser[Web Viewer] -->|Reads| DataFile
+    end
+```
+
+---
+
+## 🚀 Key Features
+
+### ⚡ Core Engine (Zig)
+* **Memory Safety:** Written in Zig to prevent buffer overflows and memory leaks.
+* **O(n) Performance:** Single-pass parsing logic for high-throughput processing.
+* **Strict Validation:** Enforces complex rules including King safety, pawn rank limits, and En Passant logic legality.
+
+### 🐍 Data Pipeline (Python)
+* **PGN Ingestion:** Tools to parse massive PGN files (`.pgn`) and extract millions of unique FENs.
+* **Deduplication:** Automatic hashing (SHA-256) to prevent duplicate positions in the database.
+* **SQLite Integration:** A zero-config, serverless database to store position history permanently.
+
+### 🌐 Secure Web Viewer
+* **Serverless:** Runs entirely in the browser via `file://` protocol.
+* **Secure Injection:** Uses **Base64 encoding** to pass data from the CLI to the Browser, neutralizing XSS vectors.
+* **Responsive UI:** CSS Grid layout with Board Flip capabilities and coordinate systems.
 
 ---
 
@@ -29,26 +57,21 @@ The parser enforces strict adherence to chess rules, rejecting invalid states th
 
 ```text
 fenalyzer/
-├── fen_parser.zig       # Core Validation Logic (Source)
-├── tests/               # Quality Assurance Suite
-│   ├── tests.ps1        # Windows Integration Tests
-│   ├── tests.sh         # Unix Integration Tests
-│   ├── docker_tests.ps1 # Windows Docker Validation
-│   └── docker_tests.sh  # Unix Docker Validation
-├── build.sh             # Compilation Script (Linux/macOS)
-├── run.sh               # Execution Script (Linux/macOS)
-├── build.ps1            # Compilation Script (Windows)
-├── run.ps1              # Execution Script (Windows)
-├── Dockerfile           # Production Build Config
-├── web/                 # Visualization Module
-│   ├── index.html
-│   ├── style.css
-│   ├── script.js
-│   └── data.js          # (Generated) Temporary data injection file
-├── .gitignore
-├── CHANGELOG.md
-├── LICENSE
-└── README.md
+├── fen_parser.zig       # [CORE] The Zig Source Code
+├── scripts/             # [CLI] Automation & Orchestration
+│   ├── build.ps1        # Compiles Zig binary (Windows)
+│   └── run.ps1          # Main Entrypoint (Windows)
+├── tools/               # [ETL] Python Data Science Tools
+│   ├── pgn_to_sqlite.py # Bulk Import PGN -> SQLite
+│   └── manage_db.py     # Database CRUD Bridge
+├── data/                # [DB] Persistent Storage (SQLite)
+├── web/                 # [UI] Frontend Viewer
+│   └── data.js          # Generated data injection file
+├── tests/               # [QA] Automated Test Suite
+├── logs/                # [LOGS] Execution logs
+├── docs/                # Documentation & Roadmap
+├── Dockerfile           # Secure Multi-stage Build config
+└── README.md            # You are here
 ```
 
 ---
@@ -56,102 +79,71 @@ fenalyzer/
 ## 🛠️ Installation & Usage
 
 ### Prerequisites
-* **Zig Compiler:** v0.11.0 up to v0.13.x (Note: v0.14+ dev builds are not supported).
+* **Zig Compiler:** v0.11.0 - v0.13.x (Required for Core).
+* **Python 3.x:** Required for Database Persistence and PGN tools.
+* **Docker:** (Optional) For containerized execution.
 
 ### 1. Windows (PowerShell)
 
-**Step 1: Build (Compile Once)**
+**Step 1: Build the Core (Run once)**
 ```powershell
-.\build.ps1
+.\scripts\build.ps1
 ```
 
-**Step 2: Run (Validate FEN)**
+**Step 2: Validate & Visualize**
+This command validates the FEN, saves it to the SQLite DB, and opens the viewer.
 ```powershell
-# Validate JSON output
-.\run.ps1 "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-
-# Validate & Open Web Viewer
-.\run.ps1 -Web "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+.\scripts\run.ps1 -Web "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
 ```
 
 ### 2. Linux / macOS (Bash)
 
-**Step 1: Build (Compile Once)**
+**Step 1: Build**
 ```bash
-chmod +x build.sh run.sh
-./build.sh
+chmod +x scripts/*.sh
+./scripts/build.sh
 ```
 
-**Step 2: Run (Validate FEN)**
+**Step 2: Run**
 ```bash
-# Validate JSON output
-./run.sh "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-
-# Validate & Open Web Viewer
-./run.sh -w "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
-```
-
-### 3. Docker Usage
-
-Run the parser in an isolated environment without installing Zig locally.
-
-```bash
-# Build the image
-docker build -t fenalyzer .
-
-# Run validation
-docker run --rm fenalyzer "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+./scripts/run.sh -w "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
 ```
 
 ---
 
 ## 🧪 Testing & Quality Assurance
 
-The project includes a comprehensive suite of integration tests to ensure binary logic, CLI wrappers, and Docker container integrity.
+We enforce code quality through a dedicated test suite located in `tests/`.
 
-**Run Integration Tests:**
+* **Integration Tests:** Verify that the Zig binary handles edge cases correctly (valid/invalid FENs).
+* **Docker Tests:** Verify the build process and ensure the container runs as a **non-root user** (`appuser`) for security compliance.
+
+**Run the Suite:**
 ```bash
 # Windows
 .\tests\tests.ps1
-
-# Linux/macOS
-./tests/tests.sh
-```
-
-**Run Docker Tests (Build, Security, Logic):**
-```bash
-# Windows
 .\tests\docker_tests.ps1
 
-# Linux/macOS
-./tests/docker_tests.sh
+# Linux
+./tests/tests.sh
 ```
 
 ---
 
-## 📡 JSON Data Format
+## 📊 Data Science Tools
 
-**Success Response:**
-```json
-{
-  "valid": true,
-  "active_color": "white",
-  "castling": "KQkq",
-  "en_passant": "-",
-  "half_move": 0,
-  "full_move": 1,
-  "board_fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR"
-}
-```
+Populate your local database with millions of real-world positions using the Python tools.
 
-**Error Response:**
-```json
-{
-  "valid": false,
-  "error": "Pawns found on the first or last rank",
-  "code": "PawnsOnBackRank"
-}
-```
+1.  **Install Dependencies:**
+    ```bash
+    pip install -r tools/requirements.txt
+    ```
+
+2.  **Bulk Import PGN:**
+    ```bash
+    python tools/pgn_to_sqlite.py path/to/my_games.pgn
+    ```
+    *This will process the PGN and create/update `data/positions.db` automatically.*
 
 ---
 

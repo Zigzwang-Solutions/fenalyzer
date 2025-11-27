@@ -6,7 +6,7 @@ $ErrorActionPreference = "Continue" # Continue running even if a test fails
 $Binary = "..\fen_parser.exe"
 
 if (-not (Test-Path $Binary)) {
-    Write-Error "Binary not found at $Binary. Please run '.\build.ps1' in the root directory first."
+    Write-Error "Binary not found at $Binary. Please run '.\scripts\build.ps1' from the root directory first."
     exit 1
 }
 

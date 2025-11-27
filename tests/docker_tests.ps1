@@ -14,7 +14,7 @@ if (-not (Get-Command "docker" -ErrorAction SilentlyContinue)) {
 }
 
 # 2. Build Test
-# PATH FIX: Build context is '..' (parent directory) to find the Dockerfile
+# PATH FIX: Build context is '..' (parent directory) to find the Dockerfile in root
 Write-Host "Test #1: Building Image from parent context..." -NoNewline
 docker build -t $ImageName .. > $null 2>&1
 if ($LASTEXITCODE -eq 0) {

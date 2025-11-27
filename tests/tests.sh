@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 
 # 1. Check Prerequisites
 if [ ! -f "$BINARY" ]; then
-    echo -e "${RED}[ERROR] Binary not found at $BINARY. Please run './build.sh' in the root directory first.${NC}"
+    echo -e "${RED}[ERROR] Binary not found at $BINARY. Please run './scripts/build.sh' from the root directory first.${NC}"
     exit 1
 fi
 

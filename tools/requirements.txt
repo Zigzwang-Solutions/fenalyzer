@@ -23,3 +23,6 @@ Google Chrome / Firefox / Edge / Safari
 
 # --- Deployment (Optional) ---
 Docker        # Required if running via container
+
+# --- Python tools ---
+python-chess==1.9.4

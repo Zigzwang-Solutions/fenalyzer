@@ -13,7 +13,7 @@ NC='\033[0m'
 echo -e "${CYAN}\n=== STARTING DOCKER TESTS ===\n${NC}"
 
 # 1. Build Test
-# PATH FIX: Build context is '..' (parent directory) to find the Dockerfile
+# PATH FIX: Build context is '..' (parent directory) to find the Dockerfile in root
 echo -n "Test #1: Building Image from parent context... "
 if docker build -t "$IMAGE_NAME" .. > /dev/null 2>&1; then
     echo -e "${GREEN}[PASS]${NC}"
@@ -26,7 +26,7 @@ fi
 # 2. Security Test (Non-root User)
 echo -n "Test #2: Checking Non-root User... "
 USER_OUTPUT=$(docker run --rm --entrypoint whoami "$IMAGE_NAME")
-# Remove whitespace
+# Remove whitespace/newlines
 USER_OUTPUT=$(echo "$USER_OUTPUT" | tr -d '[:space:]')
 
 if [ "$USER_OUTPUT" = "appuser" ]; then

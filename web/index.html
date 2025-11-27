@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="A lightweight FEN visualizer for the FENalyzer project.">
     <title>FENalyzer Viewer</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -14,33 +15,50 @@
         </header>
 
         <main>
-            <section class="board-container" aria-label="Chess Board">
-                <div id="board" class="chess-board"></div>
-            </section>
+            <div class="game-area">
+                <div class="board-layout">
+                    <div class="coords ranks" id="coords-ranks"></div>
+                    
+                    <div id="board" class="chess-board"></div>
+                    
+                    <div class="coords corner"></div>
+
+                    <div class="coords files" id="coords-files"></div>
+                </div>
+            </div>
 
             <aside class="info-panel">
                 <div class="status-card">
-                    <h3>Active FEN</h3>
-                    <code id="fen-display">Waiting for input...</code>
+                    <h3>Active Position</h3>
+                    <code id="fen-display">Waiting for data...</code>
                     
                     <div class="meta-data">
                         <span class="badge">Turn: <span id="turn-value">-</span></span>
-                        <span class="badge">Full Moves: <span id="move-value">-</span></span>
+                        <span class="badge">Moves: <span id="move-value">-</span></span>
+                    </div>
+
+                    <div class="actions">
+                        <button id="btn-flip" class="secondary-btn" type="button">🔄 Flip Board</button>
                     </div>
                 </div>
                 
                 <div class="controls">
-                    <label for="json-input">Debug: Paste JSON output manually</label>
+                    <label>Position Hash (ID):</label>
+                    <input type="text" id="hash-id" readonly class="hash-input" placeholder="-">
+                    
+                    <label for="json-input">Debug: Manual JSON Input</label>
                     <textarea id="json-input" placeholder='{"valid": true, "board_fen": "..."}'></textarea>
+                    
                     <button id="btn-render" type="button">Render JSON</button>
-                    <div id="error-msg" class="error-box hidden"></div>
+                    
+                    <div id="error-msg" class="error-box hidden" aria-live="assertive"></div>
                 </div>
             </aside>
         </main>
     </div>
 
     <script src="data.js"></script>
-    
+
     <script src="script.js"></script>
 </body>
 </html>

@@ -1,11 +1,11 @@
 # Project Roadmap
 
 This document outlines the strategic development trajectory for FENalyzer.
-**Current Stable Version:** v0.1.4
+**Current Stable Version:** v0.1.5
 
 ---
 
-## 🚧 v0.1.5 - Persistence & UI Overhaul (Next Release)
+## 🚧 v0.1.6 - Persistence & UI Overhaul (Next Release)
 **Goal:** Transform the viewer from a temporary visualizer into a persistent FEN database with enhanced user experience.
 
 ### 💾 Core: Hash-Based Persistence

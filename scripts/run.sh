@@ -1,8 +1,9 @@
 #!/bin/bash
+# scripts/run.sh - Orchestrates execution on Unix
 
-# Configuration
-BINARY="./fen_parser"
-WEB_INDEX="web/index.html"
+# --- Path Configuration ---
+BINARY="../fen_parser"
+WEB_INDEX="../web/index.html"
 FEN_INPUT=""
 WEB_MODE=false
 
@@ -22,21 +23,20 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# 1. Check if binary exists
+# 1. Check binary
 if [ ! -f "$BINARY" ]; then
-    echo -e "${RED}[ERROR] Binary not found!${NC}"
-    echo -e "${YELLOW}Please run './build.sh' first to create the executable.${NC}"
+    echo -e "${RED}[ERROR] Binary not found at $BINARY${NC}"
+    echo -e "${YELLOW}Please run './scripts/build.sh' first.${NC}"
     exit 1
 fi
 
-# 2. Validate input
 if [ -z "$FEN_INPUT" ]; then
     echo -e "${RED}[ERROR] No FEN string provided.${NC}"
-    echo "Usage: ./run.sh [-w] \"<fen_string>\""
+    echo "Usage: ./scripts/run.sh [-w] \"<fen_string>\""
     exit 1
 fi
 
-# 3. Execute validation
+# 2. Execute validation
 OUTPUT=$($BINARY "$FEN_INPUT")
 EXIT_CODE=$?
 
@@ -53,7 +53,7 @@ else
     echo "$OUTPUT"
 fi
 
-# 4. Web Integration
+# 3. Web Integration
 if [ "$WEB_MODE" = true ]; then
     if [ ! -f "$WEB_INDEX" ]; then
         echo -e "${RED}[ERROR] File web/index.html not found.${NC}"
@@ -62,26 +62,25 @@ if [ "$WEB_MODE" = true ]; then
 
     echo -e "${CYAN}Preparing web viewer...${NC}"
 
-    # Use Python3 for safe URL Encoding
+    # Use Python3 for URL Encoding (Robust)
     if command -v python3 &> /dev/null; then
         ENCODED_FEN=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$FEN_INPUT'''))")
     else
-        echo -e "${YELLOW}[WARN] Python3 not found. URL encoding might fail for complex FENs.${NC}"
+        echo -e "${YELLOW}[WARN] Python3 not found. URL encoding might fail.${NC}"
         ENCODED_FEN="$FEN_INPUT"
     fi
 
-    # Resolve absolute path (Cross-platform)
+    # Resolve absolute path
     if [[ "$OSTYPE" == "darwin"* ]]; then
         ABS_PATH=$(perl -e 'use Cwd "abs_path"; print abs_path(@ARGV[0])' -- "$WEB_INDEX")
     else
         ABS_PATH=$(readlink -f "$WEB_INDEX")
     fi
 
-    FINAL_URL="file://$ABS_PATH?fen=$ENCODED_FEN"
+    FINAL_URL="file://$ABS_PATH#fen=$ENCODED_FEN"
 
     echo -e "${CYAN}Opening default browser...${NC}"
     
-    # Launch browser
     if [[ "$OSTYPE" == "darwin"* ]]; then
         open "$FINAL_URL"
     elif command -v xdg-open &> /dev/null; then
