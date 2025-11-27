@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2025-11-26
+
+### Added
+- **Build Scripts**: Introduced dedicated build scripts (`build.ps1` for Windows, `build.sh` for Unix) to separate the compilation process from the execution process.
+- **Local Data Injection**: Implemented a strategy in `run.ps1` to generate a temporary `web/data.js` file containing the FEN data. This allows the Web Viewer to bypass modern browser security restrictions that strip query parameters from local file (`file://`) protocols.
+
+### Changed
+- **Architecture**: Refactored the CLI workflow to "Compile Once, Run Anywhere". Users must now explicitly run the build script once before using the run script, significantly improving execution speed by removing redundant compilation checks.
+- **Documentation**: Updated `README.md` to reflect the new "Build -> Run" workflow.
+
+### Fixed
+- **Web Viewer**: Fixed an issue where the chess board would fail to render on Windows because browsers (Edge/Chrome) stripped URL parameters from local files. The new data injection strategy resolves this completely.
+
 ## [1.1.1] - 2025-11-26
 
 ### Fixed

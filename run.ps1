@@ -1,114 +1,57 @@
-# Requires PowerShell 5.0+
-# Set Strict Mode to catch errors early
-
+# run.ps1 - Executes the parser, generates local data, and opens the viewer
 param (
-    [Parameter(Position=0)]
+    [Parameter(Position=0, Mandatory=$true)]
     [string]$FenInput,
-    [switch]$Rebuild,
-    [switch]$Web,
-    [switch]$Help
+    
+    [switch]$Web
 )
 
-Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
-
-# Configuration
-$ZigSource = "fen_parser.zig"
-$BinaryName = "fen_parser.exe"
-$CacheDir = ".\zig-cache"
+$BinaryName = ".\fen_parser.exe"
 $WebIndex = "web\index.html"
+$DataFile = "web\data.js"
 
-# Logging Helpers
-function Write-LogInfo { param($msg) Write-Host "[INFO] $msg" -ForegroundColor Cyan }
-function Write-LogError { param($msg) Write-Host "[ERROR] $msg" -ForegroundColor Red }
-function Write-LogSuccess { param($msg) Write-Host "[SUCCESS] $msg" -ForegroundColor Green }
-function Write-LogUrl { param($url) Write-Host $url -ForegroundColor Blue -BackgroundColor White }
-
-function Show-Usage {
-    Write-Host "Usage: .\run.ps1 [options] `"<fen_string>`""
-    Write-Host ""
-    Write-Host "Options:"
-    Write-Host "  -Rebuild    Force recompilation of the Zig binary"
-    Write-Host "  -Web        Open the FEN in the web viewer"
-    Write-Host "  -Help       Show this help message"
-    Write-Host ""
-    Write-Host "Example:"
-    Write-Host "  .\run.ps1 -Web `"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1`""
-}
-
-if ($Help) { Show-Usage; exit 0 }
-
-# Dependency Check
-if (-not (Get-Command "zig" -ErrorAction SilentlyContinue)) {
-    Write-LogError "Zig compiler not found in PATH."
+# 1. Check if binary exists
+if (-not (Test-Path $BinaryName)) {
+    Write-Host "[ERROR] Binary not found!" -ForegroundColor Red
+    Write-Host "Please run '.\build.ps1' first to create the executable." -ForegroundColor Yellow
     exit 1
 }
 
-# Compilation Logic
-if ($Rebuild -or -not (Test-Path $BinaryName)) {
-    Write-LogInfo "Compiling $ZigSource (ReleaseSafe)..."
-    try {
-        $process = Start-Process -FilePath "zig" -ArgumentList "build-exe", "$ZigSource", "-O", "ReleaseSafe", "-femit-bin=$BinaryName", "--cache-dir", "$CacheDir" -Wait -NoNewWindow -PassThru
-        
-        if ($process.ExitCode -ne 0) {
-            throw "Zig compilation exited with code $($process.ExitCode)"
-        }
-        Write-LogSuccess "Compilation finished successfully."
-    }
-    catch {
-        Write-LogError "Compilation failed."
-        exit 1
-    }
-}
-
-# Execution Logic
-if ([string]::IsNullOrWhiteSpace($FenInput)) {
-    Write-LogError "No FEN string provided."
-    Show-Usage; exit 1
-}
-
-Write-LogInfo "Analyzing FEN..."
-
 try {
-    # Execute binary
-    $output = & ".\$BinaryName" $FenInput
+    # 2. Execute validation (Zig)
+    $output = & $BinaryName $FenInput
     
-    # Try Pretty Print JSON
-    try {
+    # Try pretty-printing JSON output
+    try { 
         $jsonObj = $output | ConvertFrom-Json
         $jsonObj | ConvertTo-Json -Depth 5
-    }
-    catch {
-        Write-Host $output
+    } catch { 
+        Write-Host $output 
     }
 
-    # Web Viewer Integration
+    # 3. Web Integration (Data File Strategy)
     if ($Web) {
-        if (-not (Test-Path $WebIndex)) {
-            throw "Web viewer file not found at: $WebIndex"
-        }
+        if (-not (Test-Path $WebIndex)) { throw "File web/index.html not found." }
 
-        # 1. Obter caminho absoluto e converter para URI
+        # Generate 'data.js' with the FEN as a global variable
+        # We use a Here-String to inject the content cleanly
+        $jsContent = @"
+window.FEN_DATA = "$FenInput";
+"@
+        Set-Content -Path $DataFile -Value $jsContent -Encoding UTF8
+        Write-Host "Local data written to $DataFile" -ForegroundColor DarkGray
+
+        # Open the browser
         $absPath = (Resolve-Path $WebIndex).Path
         $fileUri = [System.Uri]$absPath
+        $finalUrl = $fileUri.AbsoluteUri 
         
-        # 2. Codificar a FEN
-        $encodedFen = [System.Uri]::EscapeDataString($FenInput)
-        
-        # 3. Montar URL Final
-        $finalUrl = $fileUri.AbsoluteUri + "?fen=" + $encodedFen
-        
-        Write-LogInfo "Opening web viewer..."
-        Write-Host "Se o navegador nao carregar o tabuleiro, copie e cole este link:" -ForegroundColor Yellow
-        Write-LogUrl $finalUrl
-        
-        # 4. Tentar abrir usando CMD /C START (Mais robusto para URLs locais com parametros)
-        # O argumento vazio "" é necessário para o titulo da janela do comando start
-        Start-Process "cmd.exe" -ArgumentList "/c start `"`" `"$finalUrl`"" -WindowStyle Hidden
+        Write-Host "Opening web viewer..." -ForegroundColor Cyan
+        Start-Process $finalUrl
     }
 }
 catch {
-    Write-LogError "Execution failed."
-    Write-LogError "Details: $($_.Exception.Message)"
+    Write-Host "[ERROR] Execution failed: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }

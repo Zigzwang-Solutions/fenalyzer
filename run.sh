@@ -1,137 +1,93 @@
-#!/usr/bin/env bash
-
-# Shell Best Practices: Strict Mode
-# Fail fast on errors, unset variables, or pipe failures.
-set -o errexit
-set -o nounset
-set -o pipefail
+#!/bin/bash
 
 # Configuration
-ZIG_SOURCE="fen_parser.zig"
-BINARY_NAME="fen_parser"
-CACHE_DIR="./zig-cache"
+BINARY="./fen_parser"
 WEB_INDEX="web/index.html"
+FEN_INPUT=""
+WEB_MODE=false
 
-# Logging Utilities
-log_info() { echo -e "\033[0;34m[INFO]\033[0m $1"; }
-log_error() { echo -e "\033[0;31m[ERROR]\033[0m $1" >&2; }
-log_success() { echo -e "\033[0;32m[SUCCESS]\033[0m $1"; }
+# Colors
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
 
-usage() {
-    echo "Usage: $0 [options] \"<fen_string>\""
-    echo ""
-    echo "Options:"
-    echo "  -h, --help    Show this help message"
-    echo "  -r, --rebuild Force recompilation of the Zig binary"
-    echo "  -w, --web     Open the FEN in the web viewer (default browser)"
-    echo ""
-    echo "Example:"
-    echo "  $0 -w \"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1\""
-}
+# Parse Arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        -w|-W|--web) WEB_MODE=true ;;
+        -*) echo "Unknown option: $1"; exit 1 ;;
+        *) FEN_INPUT="$1" ;;
+    esac
+    shift
+done
 
-check_dependencies() {
-    if ! command -v zig &> /dev/null; then
-        log_error "Zig compiler not found in PATH."
+# 1. Check if binary exists
+if [ ! -f "$BINARY" ]; then
+    echo -e "${RED}[ERROR] Binary not found!${NC}"
+    echo -e "${YELLOW}Please run './build.sh' first to create the executable.${NC}"
+    exit 1
+fi
+
+# 2. Validate input
+if [ -z "$FEN_INPUT" ]; then
+    echo -e "${RED}[ERROR] No FEN string provided.${NC}"
+    echo "Usage: ./run.sh [-w] \"<fen_string>\""
+    exit 1
+fi
+
+# 3. Execute validation
+OUTPUT=$($BINARY "$FEN_INPUT")
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+    echo -e "${RED}[ERROR] Execution failed.${NC}"
+    echo "$OUTPUT"
+    exit $EXIT_CODE
+fi
+
+# Pretty print JSON if jq is available
+if command -v jq &> /dev/null; then
+    echo "$OUTPUT" | jq .
+else
+    echo "$OUTPUT"
+fi
+
+# 4. Web Integration
+if [ "$WEB_MODE" = true ]; then
+    if [ ! -f "$WEB_INDEX" ]; then
+        echo -e "${RED}[ERROR] File web/index.html not found.${NC}"
         exit 1
     fi
-}
 
-compile_zig() {
-    local force=${1:-0}
-    # Check if binary exists or rebuild is forced
-    if [[ ! -f "$BINARY_NAME" ]] || [[ "$force" -eq 1 ]]; then
-        log_info "Compiling $ZIG_SOURCE (ReleaseSafe)..."
-        if zig build-exe "$ZIG_SOURCE" -O ReleaseSafe -femit-bin="$BINARY_NAME" --cache-dir "$CACHE_DIR"; then
-            log_success "Compilation finished successfully."
-        else
-            log_error "Compilation failed."
-            exit 1
-        fi
-    fi
-}
+    echo -e "${CYAN}Preparing web viewer...${NC}"
 
-open_url() {
-    local url="$1"
-    if command -v xdg-open &> /dev/null; then
-        xdg-open "$url"
-    elif command -v open &> /dev/null; then
-        open "$url"
+    # Use Python3 for safe URL Encoding
+    if command -v python3 &> /dev/null; then
+        ENCODED_FEN=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$FEN_INPUT'''))")
     else
-        log_info "Could not detect browser opener. Open this URL manually:"
-        echo "$url"
-    fi
-}
-
-main() {
-    local rebuild=0
-    local open_web=0
-    local fen_input=""
-
-    # Argument Parsing
-    while [[ $# -gt 0 ]]; do
-        case $1 in
-            -h|--help) usage; exit 0 ;;
-            -r|--rebuild) rebuild=1; shift ;;
-            -w|--web) open_web=1; shift ;;
-            -*) log_error "Unknown option: $1"; usage; exit 1 ;;
-            *)
-                if [[ -z "$fen_input" ]]; then
-                    fen_input="$1"
-                else
-                    log_error "Only one FEN string allowed."
-                    exit 1
-                fi
-                shift
-                ;;
-        esac
-    done
-
-    if [[ -z "$fen_input" ]]; then
-        log_error "No FEN string provided."
-        usage; exit 1
+        echo -e "${YELLOW}[WARN] Python3 not found. URL encoding might fail for complex FENs.${NC}"
+        ENCODED_FEN="$FEN_INPUT"
     fi
 
-    check_dependencies
-    compile_zig "$rebuild"
-
-    log_info "Analyzing FEN..."
-    if output=$(./"$BINARY_NAME" "$fen_input"); then
-        # Pretty print JSON if 'jq' is available
-        if command -v jq &> /dev/null; then
-            echo "$output" | jq .
-        else
-            echo "$output"
-        fi
-
-        # Web Viewer Integration
-        if [[ "$open_web" -eq 1 ]]; then
-            # Safe URL Encoding using Python if available
-            local encoded_fen
-            if command -v python3 &> /dev/null; then
-                encoded_fen=$(python3 -c "import urllib.parse, sys; print(urllib.parse.quote(sys.argv[1]))" "$fen_input")
-            else
-                # Simple fallback (replaces spaces with %20)
-                encoded_fen="${fen_input// /%20}"
-            fi
-
-            # Resolve absolute path for browser
-            local abs_path
-            # MacOS/Linux realpath difference handling
-            if command -v realpath &> /dev/null; then
-                abs_path=$(realpath "$WEB_INDEX")
-            else
-                abs_path="$(cd "$(dirname "$WEB_INDEX")"; pwd)/$(basename "$WEB_INDEX")"
-            fi
-
-            local url="file://$abs_path?fen=$encoded_fen"
-            log_info "Opening web viewer..."
-            open_url "$url"
-        fi
+    # Resolve absolute path (Cross-platform)
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        ABS_PATH=$(perl -e 'use Cwd "abs_path"; print abs_path(@ARGV[0])' -- "$WEB_INDEX")
     else
-        exit_code=$?
-        log_error "Validation process failed (Exit Code: $exit_code)"
-        exit $exit_code
+        ABS_PATH=$(readlink -f "$WEB_INDEX")
     fi
-}
 
-main "$@"
+    FINAL_URL="file://$ABS_PATH?fen=$ENCODED_FEN"
+
+    echo -e "${CYAN}Opening default browser...${NC}"
+    
+    # Launch browser
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        open "$FINAL_URL"
+    elif command -v xdg-open &> /dev/null; then
+        xdg-open "$FINAL_URL"
+    else
+        echo -e "${YELLOW}Could not detect browser launcher. Open this link manually:${NC}"
+        echo "$FINAL_URL"
+    fi
+fi

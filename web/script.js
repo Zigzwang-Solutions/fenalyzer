@@ -8,11 +8,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const dom = {
         board: document.getElementById('board'),
         fenDisplay: document.getElementById('fen-display'),
+        turnValue: document.getElementById('turn-value'),
+        moveValue: document.getElementById('move-value'),
         jsonInput: document.getElementById('json-input'),
         btnRender: document.getElementById('btn-render'),
-        errorMsg: document.getElementById('error-msg'),
-        turnValue: document.getElementById('turn-value'),
-        moveValue: document.getElementById('move-value')
+        errorMsg: document.getElementById('error-msg')
     };
 
     // Unicode Chess Pieces Mapping
@@ -23,19 +23,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Renders the chess board based on a FEN string.
-     * @param {string} fen - The full FEN string.
      */
     function renderGame(fen) {
         clearError();
-        dom.board.innerHTML = ''; // Clear previous board
+        dom.board.innerHTML = ''; 
 
-        const parts = fen.trim().split(' ');
+        // Safe cleanup if FEN is messy or has extra quotes
+        const cleanFen = fen.replace(/['"]+/g, '').trim();
+
+        const parts = cleanFen.split(' ');
         const boardFen = parts[0];
         const activeColor = parts[1] || '-';
         const fullMoves = parts[5] || '-';
 
         // Update Metadata UI
-        dom.fenDisplay.textContent = fen;
+        dom.fenDisplay.textContent = cleanFen;
         dom.turnValue.textContent = activeColor === 'w' ? 'White' : (activeColor === 'b' ? 'Black' : '?');
         dom.moveValue.textContent = fullMoves;
 
@@ -71,21 +73,10 @@ document.addEventListener('DOMContentLoaded', () => {
         div.className = `square ${isWhite ? 'light' : 'dark'}`;
         if (piece) {
             div.textContent = piece;
-            // Accessibility: screen readers can read the piece
-            div.setAttribute('aria-label', getPieceName(piece)); 
+            // Accessibility
+            div.setAttribute('aria-label', piece); 
         }
         dom.board.appendChild(div);
-    }
-
-    /**
-     * Map Unicode to text name for Accessibility (A11y)
-     */
-    function getPieceName(unicode) {
-        const names = {
-            '♜': 'Black Rook', '♞': 'Black Knight', '♝': 'Black Bishop', '♛': 'Black Queen', '♚': 'Black King', '♟': 'Black Pawn',
-            '♖': 'White Rook', '♘': 'White Knight', '♗': 'White Bishop', '♕': 'White Queen', '♔': 'White King', '♙': 'White Pawn'
-        };
-        return names[unicode] || 'Unknown Piece';
     }
 
     function showError(message) {
@@ -98,20 +89,22 @@ document.addEventListener('DOMContentLoaded', () => {
         dom.errorMsg.textContent = '';
     }
 
-    // --- Event Listeners & Initialization ---
-
-    // 1. Check URL Parameters (from CLI automation)
-    const params = new URLSearchParams(window.location.search);
-    if (params.has('fen')) {
-        try {
-            const fen = decodeURIComponent(params.get('fen'));
-            renderGame(fen);
-        } catch (e) {
-            showError("Could not decode FEN from URL.");
+    // --- INITIALIZATION LOGIC ---
+    
+    // Priority 1: Check if PowerShell injected data into window.FEN_DATA
+    if (window.FEN_DATA) {
+        console.log("Loading FEN from local data.js:", window.FEN_DATA);
+        renderGame(window.FEN_DATA);
+    } 
+    // Priority 2: Fallback to URL parameters (useful if hosted on a web server)
+    else {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('fen')) {
+            renderGame(decodeURIComponent(params.get('fen')));
         }
     }
 
-    // 2. Handle Manual JSON Input
+    // Manual JSON Input Handler
     dom.btnRender.addEventListener('click', () => {
         const rawInput = dom.jsonInput.value.trim();
         if (!rawInput) return;
@@ -126,13 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Construct FEN from JSON object if strict fields exist
             if (data.board_fen) {
                 const active = data.active_color === 'white' ? 'w' : 'b';
-                // Fallbacks for optional fields to reconstruct a valid FEN string
-                const castling = data.castling || '-';
-                const ep = data.en_passant || '-';
-                const half = data.half_move !== undefined ? data.half_move : 0;
-                const full = data.full_move !== undefined ? data.full_move : 1;
-
-                const reconstructedFen = `${data.board_fen} ${active} ${castling} ${ep} ${half} ${full}`;
+                // Use defaults for visualization if fields are missing
+                const reconstructedFen = `${data.board_fen} ${active} - - 0 1`;
                 renderGame(reconstructedFen);
             } else {
                 throw new Error("JSON missing 'board_fen' property.");

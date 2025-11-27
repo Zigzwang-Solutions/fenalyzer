@@ -10,17 +10,17 @@ FENalyzer is a robust tool designed to validate Chess [Forsyth–Edwards Notatio
 
 ### Core Validation Engine (Zig)
 The parser enforces strict adherence to chess rules, rejecting invalid states that simple regex parsers often miss:
-* **Board Geometry:** Ensures exactly 8 ranks and 8 files per rank (summing pieces and empty squares).
+* **Board Geometry:** Ensures exactly 8 ranks and 8 files per rank.
 * **King Safety:** Validates the existence of exactly one White King and one Black King.
 * **Pawn Placement:** Rejects pawns on rank 1 or 8 (illegal in standard chess).
-* **Castling Rights:** Checks for syntax correctness, duplication, and prevents rights for non-existent pieces.
-* **En Passant:** Validates target squares logic based on the active color (e.g., White to move implies target must be on rank 6).
-* **Numeric Integrity:** Safe parsing of Half-move and Full-move counters preventing integer overflows.
+* **Castling Rights:** Checks for syntax correctness and logic.
+* **En Passant:** Validates target squares logic based on the active color.
+* **Numeric Integrity:** Safe parsing of Half-move and Full-move counters.
 
 ### Polyglot Architecture
-* **Core:** Zig (v0.11+) for `O(n)` parsing speed and binary portability.
-* **CLI:** Bash (Linux/macOS) and PowerShell (Windows) wrappers for automated building and execution.
-* **Viewer:** A standalone, dependency-free HTML/JS web interface to visualize validated FENs.
+* **Core:** Zig (v0.11 - v0.13) for `O(n)` parsing speed and binary portability.
+* **CLI:** Split "Build" and "Run" scripts for instant execution without recompilation overhead.
+* **Viewer:** A standalone HTML/JS web interface. On Windows, it uses a data injection strategy to bypass local browser security restrictions.
 * **Containerization:** Multi-stage Docker build producing a minimal Alpine image.
 
 ---
@@ -30,14 +30,16 @@ The parser enforces strict adherence to chess rules, rejecting invalid states th
 ```text
 fenalyzer/
 ├── fen_parser.zig       # Core Validation Logic (Source)
-├── run.sh               # CLI Entrypoint (Linux/macOS)
-├── run.ps1              # CLI Entrypoint (Windows)
+├── build.sh             # Compilation Script (Linux/macOS)
+├── run.sh               # Execution Script (Linux/macOS)
+├── build.ps1            # Compilation Script (Windows)
+├── run.ps1              # Execution Script (Windows)
 ├── Dockerfile           # Production Build Config
-├── requirements.txt     # System Dependencies Manifest
 ├── web/                 # Visualization Module
 │   ├── index.html
 │   ├── style.css
-│   └── script.js
+│   ├── script.js
+│   └── data.js          # (Generated) Temporary data injection file
 ├── .gitignore
 ├── CHANGELOG.md
 ├── LICENSE
@@ -49,34 +51,42 @@ fenalyzer/
 ## 🛠️ Installation & Usage
 
 ### Prerequisites
-* **Zig Compiler:** v0.11.0 up to v0.13.x (Note: v0.14+ dev/nightly builds introduce breaking changes).
-* **Python 3:** (Optional, Linux only) Recommended for safe URL encoding when using the Web Viewer via CLI.
+* **Zig Compiler:** v0.11.0 up to v0.13.x (Note: v0.14+ dev builds are not supported).
 
-### 1. CLI Usage (Local)
+### 1. Windows (PowerShell)
 
-The wrapper scripts automatically compile the Zig binary (ReleaseSafe mode) on the first run.
-
-**Linux / macOS:**
-```bash
-chmod +x run.sh
-
-# Validate only (JSON output)
-./run.sh "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-
-# Validate and Open in Browser
-./run.sh -w "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+**Step 1: Build (Compile Once)**
+```powershell
+.\build.ps1
 ```
 
-**Windows (PowerShell):**
+**Step 2: Run (Validate FEN)**
 ```powershell
-# Validate only
+# Validate JSON output
 .\run.ps1 "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
-# Validate and Open in Browser
+# Validate & Open Web Viewer
 .\run.ps1 -Web "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
 ```
 
-### 2. Docker Usage
+### 2. Linux / macOS (Bash)
+
+**Step 1: Build (Compile Once)**
+```bash
+chmod +x build.sh run.sh
+./build.sh
+```
+
+**Step 2: Run (Validate FEN)**
+```bash
+# Validate JSON output
+./run.sh "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+# Validate & Open Web Viewer
+./run.sh -w "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1"
+```
+
+### 3. Docker Usage
 
 Run the parser in an isolated environment without installing Zig locally.
 
@@ -91,8 +101,6 @@ docker run --rm fenalyzer "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 
 ---
 
 ## 📡 JSON Data Format
-
-The tool outputs structured JSON for easy integration with other software pipelines.
 
 **Success Response:**
 ```json
