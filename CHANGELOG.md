@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.2] - 2025-11-26
+## [0.1.3] - 2025-11-26
 
 ### Added
 - **Build Scripts**: Introduced dedicated build scripts (`build.ps1` for Windows, `build.sh` for Unix) to separate the compilation process from the execution process.
@@ -13,12 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - **Architecture**: Refactored the CLI workflow to "Compile Once, Run Anywhere". Users must now explicitly run the build script once before using the run script, significantly improving execution speed by removing redundant compilation checks.
-- **Documentation**: Updated `README.md` to reflect the new "Build -> Run" workflow.
+- **Documentation**: Updated `README.md` to reflect the new "Build -> Run" workflow and clarified Zig compiler version compatibility (v0.11 - v0.13).
 
 ### Fixed
 - **Web Viewer**: Fixed an issue where the chess board would fail to render on Windows because browsers (Edge/Chrome) stripped URL parameters from local files. The new data injection strategy resolves this completely.
 
-## [1.1.1] - 2025-11-26
+## [0.1.2] - 2025-11-26
 
 ### Fixed
 - **Core Engine (`fen_parser.zig`)**: Fixed a compilation error regarding unreachable error handling in `main`. The parser now correctly exposes `FenError.InvalidHalfMoveClock` and `FenError.InvalidFullMoveNumber` instead of swallowing the internal `ParseIntError`.
@@ -29,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Browser Launch**: Implemented a more robust browser launch strategy using `cmd /c start` and added a fallback that prints the full clickable URL to the terminal if the automatic launch fails.
 - **Documentation**: Updated `README.md` to restrict supported Zig versions to v0.11.0 through v0.13.x, warning users against using v0.14+ (nightly/dev) builds due to breaking standard library changes.
 
-## [1.1.0] - 2025-11-26
+## [0.1.1] - 2025-11-26
 
 ### Added
 - **Web Visualization Module**: Added a `web/` directory containing a lightweight, vanilla HTML5/CSS3/ES6 viewer to render validated FEN strings on a graphical board.
@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **Error Handling**: Enhanced CLI scripts to handle browser launch failures gracefully, providing fallback instructions if the browser cannot be opened automatically.
 
-## [1.0.0] - 2025-11-26
+## [0.1.0] - 2025-11-26
 
 ### Added
 - **Core Engine (`fen_parser.zig`)**: Initial release of the FEN parser.
@@ -51,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Board Geometry:** Verifying 8x8 grid structure and rank/file integrity.
     - **Piece Placement:** Enforcing rules against pawns on back ranks and ensuring King existence.
     - **Castling Rights:** Checking syntax validity and duplicate characters.
-    - **En Passant:** Validating target squares against the active color (e.g., White to move target must be rank 6).
+    - **En Passant:** Validating target squares against the active color.
     - **Move Counters:** Safe integer parsing for Half-move and Full-move clocks.
 - **CLI Wrappers**:
   - `run.sh`: Bash entrypoint with auto-compilation, dependency checking, and colorized output.
