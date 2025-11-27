@@ -1,4 +1,4 @@
-# run.ps1 - Executes the parser, generates local data, and opens the viewer
+# run.ps1 - Securely validates FEN and handles web data injection
 param (
     [Parameter(Position=0, Mandatory=$true)]
     [string]$FenInput,
@@ -11,18 +11,17 @@ $BinaryName = ".\fen_parser.exe"
 $WebIndex = "web\index.html"
 $DataFile = "web\data.js"
 
-# 1. Check if binary exists
+# 1. Check binary existence
 if (-not (Test-Path $BinaryName)) {
     Write-Host "[ERROR] Binary not found!" -ForegroundColor Red
-    Write-Host "Please run '.\build.ps1' first to create the executable." -ForegroundColor Yellow
+    Write-Host "Please run '.\build.ps1' first." -ForegroundColor Yellow
     exit 1
 }
 
 try {
-    # 2. Execute validation (Zig)
+    # 2. Execute Zig Logic
     $output = & $BinaryName $FenInput
     
-    # Try pretty-printing JSON output
     try { 
         $jsonObj = $output | ConvertFrom-Json
         $jsonObj | ConvertTo-Json -Depth 5
@@ -30,19 +29,23 @@ try {
         Write-Host $output 
     }
 
-    # 3. Web Integration (Data File Strategy)
+    # 3. Secure Web Integration
     if ($Web) {
         if (-not (Test-Path $WebIndex)) { throw "File web/index.html not found." }
 
-        # Generate 'data.js' with the FEN as a global variable
-        # We use a Here-String to inject the content cleanly
+        # SECURITY FIX: Encode to Base64 to prevent Code Injection/XSS
+        # This neutralizes quotes, slashes, and scripts inside the FEN string.
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($FenInput)
+        $base64Fen = [System.Convert]::ToBase64String($bytes)
+
+        # Inject the safe Base64 string
         $jsContent = @"
-window.FEN_DATA = "$FenInput";
+window.FEN_DATA_B64 = "$base64Fen";
 "@
         Set-Content -Path $DataFile -Value $jsContent -Encoding UTF8
-        Write-Host "Local data written to $DataFile" -ForegroundColor DarkGray
+        Write-Host "Secure local data written to $DataFile" -ForegroundColor DarkGray
 
-        # Open the browser
+        # Open Browser
         $absPath = (Resolve-Path $WebIndex).Path
         $fileUri = [System.Uri]$absPath
         $finalUrl = $fileUri.AbsoluteUri 

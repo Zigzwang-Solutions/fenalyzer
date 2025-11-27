@@ -20,8 +20,8 @@ The parser enforces strict adherence to chess rules, rejecting invalid states th
 ### Polyglot Architecture
 * **Core:** Zig (v0.11 - v0.13) for `O(n)` parsing speed and binary portability.
 * **CLI:** Split "Build" and "Run" scripts for instant execution without recompilation overhead.
-* **Viewer:** A standalone HTML/JS web interface. On Windows, it uses a data injection strategy to bypass local browser security restrictions.
-* **Containerization:** Multi-stage Docker build producing a minimal Alpine image.
+* **Viewer:** A standalone HTML/JS web interface using Base64 data injection for secure local rendering.
+* **Containerization:** Multi-stage Docker build producing a minimal, secure (non-root) Alpine image.
 
 ---
 
@@ -30,6 +30,11 @@ The parser enforces strict adherence to chess rules, rejecting invalid states th
 ```text
 fenalyzer/
 ├── fen_parser.zig       # Core Validation Logic (Source)
+├── tests/               # Quality Assurance Suite
+│   ├── tests.ps1        # Windows Integration Tests
+│   ├── tests.sh         # Unix Integration Tests
+│   ├── docker_tests.ps1 # Windows Docker Validation
+│   └── docker_tests.sh  # Unix Docker Validation
 ├── build.sh             # Compilation Script (Linux/macOS)
 ├── run.sh               # Execution Script (Linux/macOS)
 ├── build.ps1            # Compilation Script (Windows)
@@ -96,6 +101,30 @@ docker build -t fenalyzer .
 
 # Run validation
 docker run --rm fenalyzer "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+```
+
+---
+
+## 🧪 Testing & Quality Assurance
+
+The project includes a comprehensive suite of integration tests to ensure binary logic, CLI wrappers, and Docker container integrity.
+
+**Run Integration Tests:**
+```bash
+# Windows
+.\tests\tests.ps1
+
+# Linux/macOS
+./tests/tests.sh
+```
+
+**Run Docker Tests (Build, Security, Logic):**
+```bash
+# Windows
+.\tests\docker_tests.ps1
+
+# Linux/macOS
+./tests/docker_tests.sh
 ```
 
 ---

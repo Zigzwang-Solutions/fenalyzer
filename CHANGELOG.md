@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2025-11-27
+
+### Security
+- **Data Injection Hardening**: Implemented Base64 encoding/decoding logic between `run.ps1` and `web/script.js`. This neutralizes potential Code Injection/XSS attacks when processing malicious FEN strings for the Web Viewer.
+- **Docker Hardening**: Updated `Dockerfile` to create and switch to a non-root user (`appuser`) in the final stage, following container security best practices.
+
+### Added
+- **Test Suite**: Added a dedicated `tests/` directory containing automated integration tests for both logic validation and Docker integrity.
+  - `tests/tests.ps1`: Windows integration tests.
+  - `tests/tests.sh`: Linux/macOS integration tests.
+  - `tests/docker_tests.ps1`: Windows Docker validation (Build, Logic, Security).
+  - `tests/docker_tests.sh`: Unix Docker validation.
+
 ## [0.1.3] - 2025-11-26
 
 ### Added
